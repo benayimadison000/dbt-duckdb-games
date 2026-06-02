@@ -1,5 +1,18 @@
+{{
+    config(
+        materialized='incremental',
+        unique_key='game_id',
+        on_schema_change='sync_all_columns'
+    )
+}}
+
 with games as (
     select * from {{ ref('int_games_enriched') }}
+
+    {% if is_incremental() %}
+    -- On incremental runs, only process games not already in the table
+    where game_id not in (select game_id from {{ this }})
+    {% endif %}
 ),
 
 final as (
@@ -51,27 +64,11 @@ final as (
         goty_nominated,
         goty_won,
 
-        -- Derived tiers
 
-    
-        --case
-        --    when global_sales_million >= 10  then 'Blockbuster'
-        --    when global_sales_million >= 1   then 'Hit'
-        --    when global_sales_million >= 0.1 then 'Moderate'
-        --    else 'Low'
-        --end as sales_tier,
-
-        -- Derived tiers
         {{ sales_tier('global_sales_million') }}  as sales_tier,
         {{ critic_tier('metacritic_score') }}     as critic_tier
 
-        -- case
-        --     when metacritic_score >= 90 then 'Must Play'
-        --     when metacritic_score >= 75 then 'Good'
-        --     when metacritic_score >= 60 then 'Mixed'
-        --     when metacritic_score is not null then 'Poor'
-        --     else 'Unscored'
-        -- end as critic_tier
+
 
     from games
 )

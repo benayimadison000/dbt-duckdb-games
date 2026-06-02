@@ -1,5 +1,5 @@
-with yearly as (
-    select * from {{ ref('stg_yearly_trends') }}
+with date_spine as (
+    select * from {{ ref('int_date_spine') }}
 ),
 
 games as (
@@ -21,18 +21,25 @@ games as (
     group by release_year
 ),
 
+yearly as (
+    select * from {{ ref('stg_yearly_trends') }}
+),
+
 joined as (
     select
-        g.release_year,
+        -- Use date spine as the base so no years are missing
+        d.release_year,
+        d.decade,
+        d.years_since_1980,
 
-        -- Volume
-        g.total_games,
+        -- Volume (null if no games that year)
+        coalesce(g.total_games, 0)              as total_games,
         y.total_titles_released,
 
         -- Sales
-        g.total_sales_million,
-        g.avg_sales_per_game,
-        g.total_revenue_million,
+        coalesce(g.total_sales_million, 0)      as total_sales_million,
+        coalesce(g.avg_sales_per_game, 0)       as avg_sales_per_game,
+        coalesce(g.total_revenue_million, 0)    as total_revenue_million,
 
         -- Scores
         g.avg_metacritic_score,
@@ -40,30 +47,30 @@ joined as (
 
         -- Pricing
         g.avg_launch_price_usd,
-        y.avg_launch_price_usd          as source_avg_launch_price_usd,
 
         -- Features
-        g.pct_sequels,
-        g.pct_online_multiplayer,
-        g.pct_has_dlc,
-        g.pct_microtransactions,
-        g.pct_goty_nominated,
-        g.total_goty_wins,
+        coalesce(g.pct_sequels, 0)              as pct_sequels,
+        coalesce(g.pct_online_multiplayer, 0)   as pct_online_multiplayer,
+        coalesce(g.pct_has_dlc, 0)              as pct_has_dlc,
+        coalesce(g.pct_microtransactions, 0)    as pct_microtransactions,
+        coalesce(g.pct_goty_nominated, 0)       as pct_goty_nominated,
+        coalesce(g.total_goty_wins, 0)          as total_goty_wins,
 
-        -- Year tier based on total sales
+        -- Year tier
         case
-            when g.total_sales_million >= 2000 then 'Peak Year'
-            when g.total_sales_million >= 1000 then 'Strong Year'
-            when g.total_sales_million >= 500  then 'Average Year'
+            when coalesce(g.total_sales_million, 0) >= 2000 then 'Peak Year'
+            when coalesce(g.total_sales_million, 0) >= 1000 then 'Strong Year'
+            when coalesce(g.total_sales_million, 0) >= 500  then 'Average Year'
             else 'Slow Year'
-        end                             as year_sales_tier,
+        end                                     as year_sales_tier,
 
         -- Year over year sales change
-        g.total_sales_million - lag(g.total_sales_million)
-            over (order by g.release_year) as yoy_sales_change_million
+        coalesce(g.total_sales_million, 0) - lag(coalesce(g.total_sales_million, 0))
+            over (order by d.release_year)      as yoy_sales_change_million
 
-    from games g
-    left join yearly y on g.release_year = y.release_year
+    from date_spine d
+    left join games g       on d.release_year = g.release_year
+    left join yearly y      on d.release_year = y.release_year
 )
 
 select * from joined

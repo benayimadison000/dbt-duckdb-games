@@ -5,6 +5,7 @@ with source AS (
 ),
 renamed AS (
     Select 
+        {{ dbt_utils.generate_surrogate_key(['game_id', 'platform', 'publisher']) }} as sk_game,
         game_id,
         title,
         platform,
