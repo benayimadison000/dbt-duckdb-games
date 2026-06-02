@@ -1,0 +1,54 @@
+version: 2
+
+models:
+  - name: stg_games
+    description: "Cleaned and typed games data from raw CSV"
+    columns:
+      - name: game_id
+        description: "Unique game identifier"
+        tests:
+          - unique
+          - not_null
+      - name: title
+        tests:
+          - not_null
+      - name: genre
+        tests:
+          - not_null
+      - name: platform
+        tests:
+          - not_null
+      - name: publisher
+        tests:
+          - not_null
+      - name: release_year
+        tests:
+          - not_null
+
+  - name: stg_genre_summary
+    columns:
+      - name: genre
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_platform_summary
+    columns:
+      - name: platform
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_publisher_summary
+    columns:
+      - name: publisher
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_yearly_trends
+    columns:
+      - name: release_year
+        tests:
+          - unique
+          - not_null

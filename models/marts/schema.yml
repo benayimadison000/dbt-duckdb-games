@@ -1,0 +1,41 @@
+version: 2
+
+models:
+  - name: mart_game_performance
+    description: "One row per game with sales tiers and critic tiers"
+    columns:
+      - name: game_id
+        tests:
+          - unique
+          - not_null
+      - name: sales_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Blockbuster', 'Hit', 'Moderate', 'Low']
+      - name: critic_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Must Play', 'Good', 'Mixed', 'Poor', 'Unscored']
+
+  - name: mart_genre_analysis
+    columns:
+      - name: genre
+        tests:
+          - unique
+          - not_null
+      - name: genre_sales_tier
+        tests:
+          - accepted_values:
+              values: ['Tier 1', 'Tier 2', 'Tier 3', 'Tier 4']
+
+  - name: mart_publisher_rankings
+    columns:
+      - name: publisher
+        tests:
+          - unique
+          - not_null
+      - name: sales_rank
+        tests:
+          - not_null
