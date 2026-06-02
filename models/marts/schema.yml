@@ -39,3 +39,21 @@ models:
       - name: sales_rank
         tests:
           - not_null
+
+
+  - name: mart_yearly_trends
+    description: "Year over year trends combining games data and yearly summary"
+    columns:
+      - name: release_year
+        description: "The release year"
+        tests:
+          - unique
+          - not_null
+      - name: year_sales_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Peak Year', 'Strong Year', 'Average Year', 'Slow Year']
+      - name: total_games
+        tests:
+          - not_null
