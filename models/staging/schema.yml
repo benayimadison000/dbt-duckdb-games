@@ -3,52 +3,180 @@ version: 2
 models:
   - name: stg_games
     description: "Cleaned and typed games data from raw CSV"
+    tests:
+      - dbt_expectations.expect_table_row_count_to_be_between:
+          min_value: 10000
+          max_value: 200000
+  
     columns:
       - name: game_id
         description: "Unique game identifier"
         tests:
           - unique
           - not_null
+
       - name: title
-        tests:
-          - not_null
-      - name: genre
-        tests:
-          - not_null
-      - name: platform
-        tests:
-          - not_null
-      - name: publisher
-        tests:
-          - not_null
-      - name: release_year
+        description: "Game title"
         tests:
           - not_null
 
-  - name: stg_genre_summary
-    columns:
+      - name: platform
+        description: "Platform the game was released on"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_platform_summary')
+              field: platform
+
       - name: genre
+        description: "Game genre"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_genre_summary')
+              field: genre
+
+      - name: publisher
+        description: "Game publisher"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_publisher_summary')
+              field: publisher
+
+      - name: developer
+        description: "Game developer"
+        tests:
+          - not_null
+
+      - name: platform_type
+        description: "Type of platform"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Console', 'PC', 'Handheld', 'Mobile', 'Browser', 'Hybrid', 'Streaming']
+
+      - name: publisher_tier
+        description: "Publisher tier classification"
+        tests:
+          - accepted_values:
+              values: ['AAA', 'AA', 'Indie', 'Mid-Tier', 'Mobile']
+
+      - name: sk_game
+        description: "Surrogate key generated from game_id, platform, publisher"
         tests:
           - unique
+          - not_null
+
+      - name: global_sales_million
+        description: "Global sales in millions"
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 2000
+              strictly: false
+
+      - name: metacritic_score
+        description: "Metacritic score 0-100"
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 100
+              strictly: false
+
+      - name: user_score
+        description: "User score 0-10"
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 10
+              strictly: false
+
+      - name: launch_price_usd
+        description: "Launch price in USD"
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 150
+              strictly: false
+
+      - name: release_year
+        description: "Year the game was released"
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 1970
+              max_value: 2030
+              strictly: false
+
+  - name: stg_genre_summary
+    description: "Genre-level aggregated metrics"
+    columns:
+      - name: genre
+        description: "Genre name — primary key"
+        tests:
+          - unique
+          - not_null
+      - name: total_titles
+        tests:
+          - not_null
+      - name: total_sales_million
+        tests:
+          - not_null
+      - name: avg_sales_million
+        tests:
           - not_null
 
   - name: stg_platform_summary
+    description: "Platform-level aggregated metrics"
     columns:
       - name: platform
+        description: "Platform name — primary key"
         tests:
           - unique
+          - not_null
+      - name: platform_type
+        tests:
+          - not_null
+      - name: platform_maker
+        tests:
+          - not_null
+      - name: total_titles
+        tests:
           - not_null
 
   - name: stg_publisher_summary
+    description: "Publisher-level aggregated metrics"
     columns:
       - name: publisher
+        description: "Publisher name — primary key"
         tests:
           - unique
           - not_null
+      - name: publisher_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['AAA', 'AA', 'Indie', 'Mid-Tier', 'Mobile']
+      - name: publisher_region
+        tests:
+          - not_null
+      - name: total_titles
+        tests:
+          - not_null
 
   - name: stg_yearly_trends
+    description: "Year-over-year trend data"
     columns:
       - name: release_year
+        description: "Release year — primary key"
         tests:
           - unique
+          - not_null
+      - name: total_titles_released
+        tests:
+          - not_null
+      - name: total_sales_million
+        tests:
           - not_null

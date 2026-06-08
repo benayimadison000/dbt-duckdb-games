@@ -3,52 +3,147 @@ version: 2
 models:
   - name: mart_game_performance
     description: "One row per game with sales tiers and critic tiers"
+    tests:
+      - dbt_expectations.expect_table_row_count_to_be_between:
+          min_value: 10000
+          max_value: 200000
+
     columns:
       - name: game_id
+        description: "Primary key"
         tests:
           - unique
           - not_null
+      - name: title
+        tests:
+          - not_null
+      - name: platform
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_platform_summary')
+              field: platform
+
+      - name: genre
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_genre_summary')
+              field: genre
+
+      - name: publisher
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_publisher_summary')
+              field: publisher
+
       - name: sales_tier
+        description: "Sales tier: Blockbuster, Hit, Moderate, Low"
         tests:
           - not_null
           - accepted_values:
               values: ['Blockbuster', 'Hit', 'Moderate', 'Low']
       - name: critic_tier
+        description: "Critic tier based on metacritic score"
         tests:
           - not_null
           - accepted_values:
               values: ['Must Play', 'Good', 'Mixed', 'Poor', 'Unscored']
+      - name: release_year
+        tests:
+          - not_null
+          - relationships:
+              to: ref('int_date_spine')
+              field: release_year
+
+      - name: launch_price_usd
+        tests:
+          - not_null
+
+      - name: global_sales_million
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 2000
+              strictly: false
+
+      - name: estimated_revenue_million_usd
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 100000
+              strictly: false
+
+      - name: how_long_to_beat_main_hrs
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 1000
+              strictly: false
+          
 
   - name: mart_genre_analysis
+    description: "One row per genre with aggregated metrics"
     columns:
       - name: genre
+        description: "Primary key"
         tests:
           - unique
           - not_null
-      - name: genre_sales_tier
+      - name: total_games
         tests:
+          - not_null
+      - name: total_sales_million
+        tests:
+          - not_null
+      - name: genre_sales_tier
+        description: "Genre tier: Tier 1, Tier 2, Tier 3, Tier 4"
+        tests:
+          - not_null
           - accepted_values:
               values: ['Tier 1', 'Tier 2', 'Tier 3', 'Tier 4']
 
   - name: mart_publisher_rankings
+    description: "One row per publisher with sales rankings"
     columns:
       - name: publisher
+        description: "Primary key"
         tests:
           - unique
+          - not_null
+      - name: publisher_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['AAA', 'AA', 'Indie', 'Mid-Tier', 'Mobile']
+      - name: total_games
+        tests:
+          - not_null
+      - name: total_sales_million
+        tests:
           - not_null
       - name: sales_rank
         tests:
           - not_null
-
+      - name: sales_rank_within_tier
+        tests:
+          - not_null
 
   - name: mart_yearly_trends
-    description: "Year over year trends combining games data and yearly summary"
+    description: "One row per year from 1980 to 2029"
     columns:
       - name: release_year
-        description: "The release year"
+        description: "Primary key"
         tests:
           - unique
           - not_null
+      - name: decade
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['1980s', '1990s', '2000s', '2010s', '2020s']
       - name: year_sales_tier
         tests:
           - not_null
